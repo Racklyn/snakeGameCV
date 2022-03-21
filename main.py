@@ -6,12 +6,10 @@ import numpy as np
 from cvzone.HandTrackingModule import HandDetector
 import os
 
-CAP_WIDTH = 640#1280
-CAP_HEIGHT = 480#720
+cap = cv2.VideoCapture(0) # Change here according to your webcam id (0, 1, 2...)
 
-cap = cv2.VideoCapture(0)
-cap.set(3, CAP_WIDTH)#(3, 1280) # Wight
-cap.set(4, CAP_HEIGHT)#(4, 720) # Height
+CAP_WIDTH = int(cap.get(3))
+CAP_HEIGHT = int(cap.get(4))
 
 detector = HandDetector(detectionCon=0.8, maxHands=1)
 
@@ -36,7 +34,7 @@ class SnakeGameClass:
 
 
     def updateFood(self):
-        imgsPaths = ["apple", "coffee", "iceCream", "pizza"]
+        imgsPaths = ["apple", "coffee", "donut", "iceCream", "pizza"]
         curr = imgsPaths[random.randint(0, len(imgsPaths)-1)]
         return cv2.resize(cv2.imread(os.path.join("images", f'{curr}.png'), cv2.IMREAD_UNCHANGED),
                         (50,50), interpolation=cv2.INTER_AREA)
@@ -84,8 +82,6 @@ class SnakeGameClass:
             self.imgFood = self.updateFood()
             self.allowedLength += 50
             self.score += 1
-            print(self.score)
-
 
 
 
@@ -93,18 +89,18 @@ class SnakeGameClass:
         cvzone.putTextRect(imgMain, f'Score: {self.score}', [50, 80], scale= 3, 
                     thickness = 3, offset = 10)
 
-        # Draw snake
-        if self.points:
-            for i, point in enumerate(self.points):
-                if i != 0:
-                    cv2.line(imgMain, self.points[i-1],point, (0,0,255), 20)
-            cv2.circle(imgMain, self.points[-1], 12, (200, 0, 200), cv2.FILLED)
-
 
         # Draw food
         rx, ry = self.foodPoint
         imgMain = cvzone.overlayPNG(imgMain, self.imgFood, (rx-self.wFood//2, ry-self.hFood//2))
 
+
+        # Draw snake
+        if self.points:
+            for i, point in enumerate(self.points):
+                if i != 0:
+                    cv2.line(imgMain, self.points[i-1],point, (0,0,255), 20)
+            cv2.circle(imgMain, self.points[-1], 12, (0, 180, 40), cv2.FILLED)
 
         
         # Check for collision
@@ -135,12 +131,12 @@ game = SnakeGameClass()
 
 while True:
     success, img = cap.read()
-    img = cv2.flip(img, 1) # Inverter a imagem horizontalmente
+    img = cv2.flip(img, 1) # Flip image horizontally
     hands, img = detector.findHands(img, flipType=False)
 
     if hands:
-        lmList = hands[0]['lmList'] # Lista dos pontos detectados da mão
-        pointIndex = lmList[8][0:2] # Pontos [x, y] do dedo indicador, sem incluir z. [x, y, z]
+        lmList = hands[0]['lmList'] # List of hand detected points (landmarkers)
+        pointIndex = lmList[8][0:2] # Index finger points [x, y], without z. [x, y, z]
         img = game.update(img, pointIndex)
 
     cv2.imshow("Image",img)
